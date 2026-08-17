@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { login } from '../../api/auth/authService'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ArrowRight, Eye, EyeOff, Moon, Sun, House } from 'lucide-react'
+import { BrandLockup } from '../../components/BrandLogo'
 
 function useTheme() {
   const [theme, setTheme] = useState(() => {
@@ -30,32 +31,14 @@ const CAMPUS_IMG =
 
 function BrandMark({ light = false }) {
   return (
-    <div className="flex items-center gap-2.5">
-      <img
-        src="/callohm-logo.png"
-        alt="CallOHM"
-        className="hi-nav-logo"
-        style={light ? { filter: 'brightness(0) invert(1)' } : undefined}
-      />
-      <div className="leading-none">
-        <div
-          className="text-base font-semibold"
-          style={{ color: light ? '#fff' : 'var(--ink)', letterSpacing: '-0.012em', fontFamily: 'var(--ui)' }}
-        >
-          CallOHM
-        </div>
-        <div
-          className="mt-1 text-[10px] font-medium uppercase"
-          style={{ color: light ? 'rgba(255,255,255,0.62)' : 'var(--ink-3)', letterSpacing: '0.18em', fontFamily: 'var(--mono)' }}
-        >
-          Admissions
-        </div>
-      </div>
-    </div>
+    <BrandLockup
+      tagline="Agentic AI for College Admissions"
+      tone={light ? 'light' : 'default'}
+    />
   )
 }
 
-function Field({ id, label, type = 'text', value, onChange, placeholder, trailing }) {
+function Field({ id, label, type = 'text', value, onChange, placeholder, trailing, autoComplete }) {
   return (
     <label className="block" htmlFor={id}>
       <span
@@ -71,6 +54,7 @@ function Field({ id, label, type = 'text', value, onChange, placeholder, trailin
           value={value}
           onChange={onChange}
           placeholder={placeholder}
+          autoComplete={autoComplete}
           className="w-full rounded-2xl px-4 py-3.5 pr-12 text-sm outline-none transition-all duration-200"
           style={{ border: '1px solid var(--hair)', background: 'var(--surface)', color: 'var(--ink)', fontFamily: 'var(--ui)' }}
           onFocus={(e) => {
@@ -86,6 +70,32 @@ function Field({ id, label, type = 'text', value, onChange, placeholder, trailin
       </div>
     </label>
   )
+}
+
+/** Turn an API/network failure into something a person can act on. */
+function loginErrorMessage(err) {
+  // fetch() rejects with a TypeError when the API is unreachable - no status.
+  if (err?.status == null) {
+    return 'Could not reach the server. Check your connection and try again.'
+  }
+  switch (err.status) {
+    case 400:
+    case 401:
+      return err.message && !/^Request failed/.test(err.message)
+        ? err.message
+        : 'Incorrect email or password. Please try again.'
+    case 403:
+      return err.message || 'This account does not have access. Contact your administrator.'
+    case 404:
+      return 'No account found with that email address.'
+    case 422:
+      return err.message || 'Please enter a valid email address and password.'
+    case 429:
+      return 'Too many sign-in attempts. Please wait a moment and try again.'
+    default:
+      if (err.status >= 500) return 'The server ran into a problem. Please try again shortly.'
+      return err.message || 'Sign-in failed. Please try again.'
+  }
 }
 
 export default function Login() {
@@ -109,7 +119,7 @@ export default function Login() {
       await login(email, password)
       navigate('/app/analytics')
     } catch (err) {
-      setError(err.message || 'Invalid email or password. Please try again.')
+      setError(loginErrorMessage(err))
     } finally {
       setLoading(false)
     }
@@ -118,7 +128,7 @@ export default function Login() {
   return (
     <div
       className="landing-v2 relative min-h-screen"
-      data-accent="clay"
+      data-accent="edu"
       data-theme-scope={theme}
       style={{ background: 'var(--bg)', color: 'var(--ink)', fontFamily: 'var(--ui)' }}
     >
@@ -159,7 +169,7 @@ export default function Login() {
                 }}
               >
                 Every call.{' '}
-                <em style={{ fontStyle: 'italic', color: 'color-mix(in srgb, var(--accent) 60%, white)' }}>
+                <em style={{ fontStyle: 'normal', color: 'color-mix(in srgb, var(--accent) 55%, white)' }}>
                   Every intake.
                 </em>
               </h2>
@@ -172,11 +182,11 @@ export default function Login() {
 
         {/* Right: login form */}
         <main className="relative flex flex-col">
-          <div className="fixed top-0 right-0 z-50 flex items-center justify-between px-6 sm:px-10 py-4 lg:justify-end w-full lg:w-1/2">
-            <Link to="/" className="inline-flex lg:hidden" style={{ textDecoration: 'none' }}>
+          <div className="auth-topbar fixed top-0 right-0 z-50 flex items-center justify-between px-6 sm:px-10 py-4 lg:justify-end w-full lg:w-1/2">
+            <Link to="/" className="auth-topbar-brand inline-flex lg:hidden" style={{ textDecoration: 'none' }}>
               <BrandMark />
             </Link>
-            <div className="flex items-center gap-2">
+            <div className="auth-topbar-actions flex items-center gap-2">
               <button
                 className="theme-toggle"
                 onClick={toggleTheme}
@@ -195,9 +205,9 @@ export default function Login() {
               <motion.div custom={0} variants={fade} initial="hidden" animate="show" className="mb-7">
                 <h1
                   className="text-4xl sm:text-5xl"
-                  style={{ fontFamily: 'var(--display)', fontWeight: 400, letterSpacing: '-0.025em', lineHeight: 1.02 }}
+                  style={{ fontFamily: 'var(--display)', fontWeight: 700, letterSpacing: '-0.038em', lineHeight: 1.02 }}
                 >
-                  Sign <em style={{ color: 'var(--accent)', fontStyle: 'italic' }}>in.</em>
+                  Sign <em style={{ fontStyle: 'normal' }}>in.</em>
                 </h1>
               </motion.div>
 
@@ -207,6 +217,7 @@ export default function Login() {
                     id="email"
                     label="Email"
                     type="email"
+                    autoComplete="username"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@institution.edu"
@@ -218,6 +229,7 @@ export default function Login() {
                     id="password"
                     label="Password"
                     type={showPassword ? 'text' : 'password'}
+                    autoComplete="current-password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter your password"
@@ -225,7 +237,8 @@ export default function Login() {
                       <button
                         type="button"
                         onClick={() => setShowPassword((v) => !v)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2"
+                        /* Padded out to a ~37px target: the bare icon was 17px. */
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-2.5"
                         style={{ color: 'var(--ink-3)' }}
                         aria-label={showPassword ? 'Hide password' : 'Show password'}
                       >
@@ -263,7 +276,7 @@ export default function Login() {
                     disabled={loading}
                     whileHover={{ y: -1 }}
                     whileTap={{ scale: 0.99 }}
-                    className="btn btn-primary btn-arrow w-full justify-center"
+                    className="btn btn-solid-ink btn-arrow w-full justify-center"
                     style={{ padding: '14px 22px', fontSize: 15, fontWeight: 500 }}
                   >
                     <AnimatePresence mode="wait">
@@ -299,6 +312,19 @@ export default function Login() {
                 <Link to="/book-demo" style={{ color: 'var(--accent)', fontWeight: 500 }}>Book a demo →</Link>
               </motion.div>
             </div>
+          </div>
+
+          {/* Signing in is the only job on this page, so the marketing footer
+              would only add a scroll and a dead band under the campus panel.
+              One slim line closes the column instead. */}
+          <div
+            className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 px-5 sm:px-8 pb-7 text-center text-xs"
+            style={{ color: 'var(--ink-4)' }}
+          >
+            <span>© {new Date().getFullYear()} EduGuide</span>
+            <Link to="/" style={{ color: 'inherit' }}>Home</Link>
+            <Link to="/pricing" style={{ color: 'inherit' }}>Pricing</Link>
+            <Link to="/contact" style={{ color: 'inherit' }}>Contact</Link>
           </div>
         </main>
 

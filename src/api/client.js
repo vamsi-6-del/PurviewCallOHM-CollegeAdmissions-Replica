@@ -8,11 +8,11 @@ function _getStoredSession() {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || null } catch { return null }
 }
 
-function _saveStoredSession(data, role) {
+function _saveStoredSession(data, previous) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify({
+    ...previous,
     accessToken: data.access_token,
     refreshToken: data.refresh_token,
-    role,
   }))
 }
 
@@ -35,11 +35,38 @@ async function _attemptRefresh() {
     })
     const data = await res.json().catch(() => null)
     if (!res.ok) { _clearAndRedirect(); throw new Error('Session expired') }
-    _saveStoredSession(data, session.role)
+    _saveStoredSession(data, session)
     return data
   })().finally(() => { _refreshPromise = null })
 
   return _refreshPromise
+}
+
+/** Endpoints where a 401 means "bad credentials", not "expired session". */
+function _isAuthEndpoint(path) {
+  return path.startsWith('/auth/login') || path.startsWith('/auth/refresh')
+}
+
+/** FastAPI `detail` can be a string, or an array of validation errors. */
+function _extractMessage(data, status) {
+  const detail = data?.detail ?? data?.message
+  if (typeof detail === 'string' && detail.trim()) return detail
+  if (Array.isArray(detail)) {
+    const msg = detail.map((d) => d?.msg).filter(Boolean).join(', ')
+    if (msg) return msg
+  }
+  // 429s from a gateway or provider usually arrive with no body at all, and
+  // "Request failed (429)" tells the user nothing they can act on.
+  if (status === 429) return 'Too many requests. The server is rate limiting. Wait a moment and try again.'
+  return `Request failed (${status})`
+}
+
+/** Seconds the server asked us to wait, when it says so. */
+function _retryAfter(res) {
+  const raw = res.headers?.get?.('Retry-After')
+  if (!raw) return undefined
+  const seconds = Number(raw)
+  return Number.isFinite(seconds) ? seconds : undefined
 }
 
 async function request(path, options = {}) {
@@ -61,7 +88,7 @@ async function request(path, options = {}) {
 
   const data = await res.json().catch(() => null)
 
-  if (res.status === 401 && !_isRetry) {
+  if (res.status === 401 && !_isRetry && !_isAuthEndpoint(path)) {
     try {
       await _attemptRefresh()
       const newSession = _getStoredSession()
@@ -75,9 +102,9 @@ async function request(path, options = {}) {
   }
 
   if (!res.ok) {
-    const message = data?.detail || data?.message || `Request failed (${res.status})`
-    const err = new Error(message)
+    const err = new Error(_extractMessage(data, res.status))
     err.status = res.status
+    err.retryAfter = _retryAfter(res)
     throw err
   }
 
@@ -93,7 +120,7 @@ async function rawRequest(path, options = {}) {
   }
   const res = await fetch(`${BASE_URL}${path}`, { ...rest, headers })
 
-  if (res.status === 401 && !_isRetry) {
+  if (res.status === 401 && !_isRetry && !_isAuthEndpoint(path)) {
     try {
       await _attemptRefresh()
       const newSession = _getStoredSession()
@@ -107,10 +134,11 @@ async function rawRequest(path, options = {}) {
   if (!res.ok) {
     let message = `Request failed (${res.status})`
     try {
-      const data = await res.json()
-      message = data?.detail || data?.message || message
+      message = _extractMessage(await res.json(), res.status)
     } catch { /* ignore */ }
-    throw new Error(message)
+    const err = new Error(message)
+    err.status = res.status
+    throw err
   }
   return res
 }
@@ -118,6 +146,7 @@ async function rawRequest(path, options = {}) {
 export const api = {
   get: (path, options) => request(path, { method: 'GET', ...options }),
   post: (path, body, options) => request(path, { method: 'POST', body, ...options }),
+  put: (path, body, options) => request(path, { method: 'PUT', body, ...options }),
   patch: (path, body, options) => request(path, { method: 'PATCH', body, ...options }),
   del: (path, options) => request(path, { method: 'DELETE', ...options }),
   postForm: (path, formData, options = {}) => {

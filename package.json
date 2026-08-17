@@ -12,6 +12,7 @@
   "dependencies": {
     "@elevenlabs/react": "^0.13.0",
     "framer-motion": "^12.38.0",
+    "livekit-client": "^2.21.0",
     "lucide-react": "^1.11.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",

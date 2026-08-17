@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash('/c/Program Files/Google/Chrome/Application/chrome.exe' --headless=new --disable-gpu --hide-scrollbars --window-size=1440,700 --virtual-time-budget=5000 --screenshot=C:/Users/USER/AppData/Local/Temp/claude/c--Users-USER-PurviewCallOHM-CollegeAdmissions-Replica/705d34a6-277c-4853-8c2a-2474d3d38968/scratchpad/menu.png http://localhost:5173/about)",
+      "Bash(curl -s \"http://localhost:5173/src/components/SiteNav.jsx\")",
+      "Bash('/c/Program Files/Google/Chrome/Application/chrome.exe' --headless=new --disable-gpu --hide-scrollbars --window-size=1440,620 --virtual-time-budget=5000 --screenshot=C:/Users/USER/AppData/Local/Temp/claude/c--Users-USER-PurviewCallOHM-CollegeAdmissions-Replica/705d34a6-277c-4853-8c2a-2474d3d38968/scratchpad/menu2.png http://localhost:5173/pricing)",
+      "Bash('/c/Program Files/Google/Chrome/Application/chrome.exe' --headless=new --disable-gpu --hide-scrollbars --window-size=1440,3400 --virtual-time-budget=7000 --screenshot=C:/Users/USER/AppData/Local/Temp/claude/c--Users-USER-PurviewCallOHM-CollegeAdmissions-Replica/705d34a6-277c-4853-8c2a-2474d3d38968/scratchpad/about-full.png http://localhost:5173/about)",
+      "Bash('/c/Program Files/Google/Chrome/Application/chrome.exe' --headless=new --disable-gpu --hide-scrollbars --window-size=414,900 --virtual-time-budget=6000 --screenshot=C:/Users/USER/AppData/Local/Temp/claude/c--Users-USER-PurviewCallOHM-CollegeAdmissions-Replica/705d34a6-277c-4853-8c2a-2474d3d38968/scratchpad/pricing-mobile.png http://localhost:5173/pricing)",
+      "PowerShell(npx eslint src/components/SiteNav.jsx src/pages/company/AboutPage.jsx src/pages/CustomersPage.jsx)",
+      "Bash(mkdir -p public/leadership)",
+      "Bash(mv src/components/chiranjeevi.jpg src/components/james.png src/components/mani.jpg src/components/manoj.jpg src/components/punna.jpg public/leadership/)",
+      "Bash('/c/Program Files/Google/Chrome/Application/chrome.exe' --headless=new --disable-gpu --hide-scrollbars --window-size=1440,1750 --virtual-time-budget=7000 --screenshot=C:/Users/USER/AppData/Local/Temp/claude/c--Users-USER-PurviewCallOHM-CollegeAdmissions-Replica/705d34a6-277c-4853-8c2a-2474d3d38968/scratchpad/leadership.png http://localhost:5173/leadership)",
+      "PowerShell(npx eslint src/pages/company/LeadershipPage.jsx)",
+      "Bash('/c/Program Files/Google/Chrome/Application/chrome.exe' --headless=new --disable-gpu --hide-scrollbars --window-size=1200,1000 --virtual-time-budget=1200 --screenshot=C:/Users/USER/AppData/Local/Temp/claude/c--Users-USER-PurviewCallOHM-CollegeAdmissions-Replica/705d34a6-277c-4853-8c2a-2474d3d38968/scratchpad/ld-t0.png http://localhost:5173/leadership)",
+      "Bash('/c/Program Files/Google/Chrome/Application/chrome.exe' --headless=new --disable-gpu --hide-scrollbars --window-size=1280,1000 --virtual-time-budget=6000 --screenshot=C:/Users/USER/AppData/Local/Temp/claude/c--Users-USER-PurviewCallOHM-CollegeAdmissions-Replica/705d34a6-277c-4853-8c2a-2474d3d38968/scratchpad/contact.png http://localhost:5173/contact)",
+      "Bash('/c/Program Files/Google/Chrome/Application/chrome.exe' --headless=new --disable-gpu --hide-scrollbars --window-size=1440,3200 --virtual-time-budget=7000 --screenshot=C:/Users/USER/AppData/Local/Temp/claude/c--Users-USER-PurviewCallOHM-CollegeAdmissions-Replica/705d34a6-277c-4853-8c2a-2474d3d38968/scratchpad/pricing-full.png http://localhost:5173/pricing)",
+      "Bash(sort -t: -k2 -nr)",
+      "Bash(grep -v \"^\\\\S*: *\\\\\\(\\\\*\\\\|//\\\\|/\\\\*\\\\|{/\\\\*\\\\\\)\")",
+      "Bash(grep -v \"^[^:]*:[0-9]*: *\\\\\\(\\\\*\\\\|//\\\\|/\\\\*\\\\|{/\\\\*\\\\\\)\")",
+      "Bash(npx eslint *)",
+      "Bash(grep -n \"hi-mega\\\\b\\\\|\\\\.hi-mega[ ,{.]\\\\|hi-nav-mega-wrap\\\\|\\\\.hi-nav\\\\b\" src/index.css)",
+      "Bash(awk -F: '$1<1680 && $1>1500')",
+      "Bash(node C:/Users/USER/AppData/Local/Temp/claude/c--Users-USER-PurviewCallOHM-CollegeAdmissions-Replica/84dce4e1-4499-4147-9f1c-bca048960840/scratchpad/probe3.js)",
+      "Bash(sed -i 's|'\\\\''.hi-nav-link, .hi-nav-mega-wrap'\\\\''|'\\\\''.hi-nav-link, .hi-nav-mega-wrap, .hi-nav-demo-btn'\\\\''|' C:/Users/USER/AppData/Local/Temp/claude/c--Users-USER-PurviewCallOHM-CollegeAdmissions-Replica/84dce4e1-4499-4147-9f1c-bca048960840/scratchpad/probe4.js)",
+      "Bash(node C:/Users/USER/AppData/Local/Temp/claude/c--Users-USER-PurviewCallOHM-CollegeAdmissions-Replica/84dce4e1-4499-4147-9f1c-bca048960840/scratchpad/probe4.js)",
+      "Bash(node func.js)",
+      "Bash(node shots.js)",
+      "Bash(grep -rn \"https://images\\\\.\\\\|http://\\\\|https://\" src/pages src/components --include=*.jsx)",
+      "Bash(awk '{print $5, $9}')",
+      "Bash(node deep.js)",
+      "Bash(node deep2.js)",
+      "Bash(node verify.js)",
+      "Bash(grep -n \"^\\\\.ui \\\\|^\\\\.ui{\\\\|^\\\\.ui,\\\\|^\\\\.ui-card\\\\|^\\\\.ui-title\\\\|^\\\\.ui-label\\\\|min-width\" src/index.css)",
+      "Bash(node \"C:/Users/USER/AppData/Local/Temp/claude/c--Users-USER-PurviewCallOHM-CollegeAdmissions-Replica/1cdb45e6-6292-4512-af76-c3fc3b2dad50/scratchpad/add-base-cols.mjs\")"
+    ]
+  }
+}

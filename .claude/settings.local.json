@@ -9,7 +9,32 @@
       "Bash(python3 -c ' *)",
       "Bash(xargs grep *)",
       "PowerShell(Get-ChildItem -Path \"c:\\\\Users\\\\Shashirekha\\\\Desktop\\\\My Projects\\\\CallOHM-Admissions\" -Recurse -Force | Select-Object FullName | ForEach-Object { $_.FullName -replace [regex]::Escape\\(\"c:\\\\Users\\\\Shashirekha\\\\Desktop\\\\My Projects\\\\CallOHM-Admissions\"\\), \".\" } | head -200)",
-      "PowerShell(Get-ChildItem -Path \"c:\\\\Users\\\\Shashirekha\\\\Desktop\\\\My Projects\\\\CallOHM-Admissions\" -Recurse -Force | Select-Object FullName | ForEach-Object { $_.FullName -replace [regex]::Escape\\(\"c:\\\\Users\\\\Shashirekha\\\\Desktop\\\\My Projects\\\\CallOHM-Admissions\"\\), \".\" } | Select-Object -First 200)"
+      "PowerShell(Get-ChildItem -Path \"c:\\\\Users\\\\Shashirekha\\\\Desktop\\\\My Projects\\\\CallOHM-Admissions\" -Recurse -Force | Select-Object FullName | ForEach-Object { $_.FullName -replace [regex]::Escape\\(\"c:\\\\Users\\\\Shashirekha\\\\Desktop\\\\My Projects\\\\CallOHM-Admissions\"\\), \".\" } | Select-Object -First 200)",
+      "Bash(npx eslint *)",
+      "Bash(npx vite *)",
+      "PowerShell(npx eslint src/pages/calls/CallHistoryPage.jsx src/pages/calls/RecordingsPage.jsx src/components/resource/AudioPlayer.jsx)",
+      "PowerShell(npx eslint src/pages/calls/CallHistoryPage.jsx; npx vite build --logLevel error; \"build exit: $LASTEXITCODE\")",
+      "Bash(curl -s -m 8 http://192.168.0.191:7860/openapi.json -o /tmp/oa.json -w \"%{http_code}\\\\n\")",
+      "Bash(python -c ' *)",
+      "Read(//c/Users/USER/AppData/Local/Temp/claude/c--Users-USER-PurviewCallOHM-CollegeAdmissions-Replica/a67dbe0b-3517-4c8c-b787-5960f5ec78ed/scratchpad/**)",
+      "Bash(python -)",
+      "Bash(git rm *)",
+      "PowerShell(npx eslint src/pages/calls/CallHistoryPage.jsx src/App.jsx; npx vite build --logLevel error; \"build exit: $LASTEXITCODE\")",
+      "PowerShell(npx eslint src/utils/datetime.js; npx vite build --logLevel error; \"build exit: $LASTEXITCODE\")",
+      "Bash('/c/Program Files/Google/Chrome/Application/chrome.exe' --headless=new --disable-gpu --hide-scrollbars --window-size=1440,2400 --virtual-time-budget=7000 --screenshot=C:/Users/USER/AppData/Local/Temp/claude/c--Users-USER-PurviewCallOHM-CollegeAdmissions-Replica/705d34a6-277c-4853-8c2a-2474d3d38968/scratchpad/about-bn.png http://localhost:5173/about)",
+      "Bash(curl -s -o /dev/null -w \"punna.jpg -> HTTP %{http_code}, %{size_download} bytes\\\\n\" \"http://localhost:5173/leadership/punna.jpg\")",
+      "Bash('/c/Program Files/Google/Chrome/Application/chrome.exe' --headless=new --disable-gpu --hide-scrollbars --window-size=1400,900 --virtual-time-budget=2500 --screenshot=C:/Users/USER/AppData/Local/Temp/claude/c--Users-USER-PurviewCallOHM-CollegeAdmissions-Replica/705d34a6-277c-4853-8c2a-2474d3d38968/scratchpad/lead-spot.png http://localhost:5173/leadership)",
+      "Bash('/c/Program Files/Google/Chrome/Application/chrome.exe' --headless=new --disable-gpu --hide-scrollbars --window-size=1400,1050 --virtual-time-budget=2500 --screenshot=C:/Users/USER/AppData/Local/Temp/claude/c--Users-USER-PurviewCallOHM-CollegeAdmissions-Replica/705d34a6-277c-4853-8c2a-2474d3d38968/scratchpad/lead-spot2.png http://localhost:5173/leadership)",
+      "Bash(curl -s -o /dev/null -w \"root=%{http_code}\\\\n\" http://localhost:5173/)",
+      "Bash(curl -s \"http://localhost:5173/src/pages/company/LeadershipPage.jsx\")",
+      "Bash(curl -s \"http://localhost:5173/src/pages/PricingPage.jsx\")",
+      "Bash(python -c \"import sys,re,json; t=sys.stdin.read\\(\\); m=re.search\\(r'const error = \\(\\\\{.*?\\\\}\\);', t, re.S\\); d=json.loads\\(m.group\\(1\\)\\); print\\(d['message'][:800]\\)\")",
+      "Bash(grep -v 'className=\\\\|`tel:\\\\|`mailto:\\\\|<style>{`\\\\|`}</style>\\\\|`${')",
+      "Bash('/c/Program Files/Google/Chrome/Application/chrome.exe' --headless=new --disable-gpu --hide-scrollbars --window-size=1440,2600 --virtual-time-budget=6000 --screenshot=C:/Users/USER/AppData/Local/Temp/claude/c--Users-USER-PurviewCallOHM-CollegeAdmissions-Replica/705d34a6-277c-4853-8c2a-2474d3d38968/scratchpad/pricing-ed.png http://localhost:5173/pricing)",
+      "Bash('/c/Program Files/Google/Chrome/Application/chrome.exe' --headless=new --disable-gpu --hide-scrollbars --window-size=1440,2700 --virtual-time-budget=6000 --screenshot=C:/Users/USER/AppData/Local/Temp/claude/c--Users-USER-PurviewCallOHM-CollegeAdmissions-Replica/705d34a6-277c-4853-8c2a-2474d3d38968/scratchpad/about-ed.png http://localhost:5173/about)",
+      "Bash(awk '/^\\\\.nx-section \\\\{/,/^\\\\}/' src/index.css)",
+      "Bash(awk '/^\\\\.nx-section-tint/,/^\\\\}/' src/index.css)",
+      "Bash('/c/Program Files/Google/Chrome/Application/chrome.exe' --headless=new --disable-gpu --hide-scrollbars --window-size=1440,1750 --virtual-time-budget=3000 --screenshot=C:/Users/USER/AppData/Local/Temp/claude/c--Users-USER-PurviewCallOHM-CollegeAdmissions-Replica/705d34a6-277c-4853-8c2a-2474d3d38968/scratchpad/lead-bio.png http://localhost:5173/leadership)"
     ]
   }
 }

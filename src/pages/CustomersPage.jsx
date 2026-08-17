@@ -3,6 +3,7 @@ import { Quote, ArrowRight } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useTheme } from '../hooks/useTheme'
 import SiteNav from '../components/SiteNav'
+import SiteFooter from '../components/SiteFooter'
 
 const STATS = [
   { value: '185K+', label: 'calls placed every month' },
@@ -13,14 +14,14 @@ const STATS = [
 
 const TESTIMONIALS = [
   {
-    quote: 'CallOHM cut our follow-up time from days to minutes. Our counselors now focus on real conversations - the platform handles the rest.',
+    quote: 'EduGuide cut our follow-up time from days to minutes. Our counselors now focus on real conversations - the platform handles the rest.',
     name: 'Rohit Mehra',
     role: 'Director of Admissions',
     institution: 'CBIT',
     initials: 'RM',
   },
   {
-    quote: 'We ran three intake cycles with CallOHM. Each one was smoother than the last. The analytics alone saved us 20+ hours of reporting.',
+    quote: 'We ran three intake cycles with EduGuide. Each one was smoother than the last. The analytics alone saved us 20+ hours of reporting.',
     name: 'Priya Nair',
     role: 'Head of Enrolment',
     institution: 'Mahindra University',
@@ -29,7 +30,7 @@ const TESTIMONIALS = [
   {
     quote: 'The multilingual voice agents were a game changer for us. Students respond much better to a voice that feels natural in their language.',
     name: 'Arjun Sethi',
-    role: 'VP – Student Affairs',
+    role: 'VP, Student Affairs',
     institution: 'VNR VJIET',
     initials: 'AS',
   },
@@ -61,9 +62,9 @@ export default function CustomersPage() {
   const [theme, toggleTheme] = useTheme()
 
   return (
-    <div className="landing-v2" data-accent="clay" data-theme-scope={theme} style={{ minHeight: '100vh' }}>
+    <div className="landing-v2" data-accent="edu" data-theme-scope={theme} style={{ minHeight: '100vh' }}>
 
-      <SiteNav theme={theme} onToggleTheme={toggleTheme} active="customers" />
+      <SiteNav theme={theme} onToggleTheme={toggleTheme} active="company" />
 
       {/* Hero */}
       <section className="landing-container" style={{ paddingTop: 140, paddingBottom: 64, textAlign: 'center' }}>
@@ -83,7 +84,7 @@ export default function CustomersPage() {
           }}
         >
           Trusted by engineering colleges<br />
-          <em style={{ color: 'var(--accent)' }}>across Hyderabad.</em>
+          <em style={{ color: 'var(--accent)' }}>across India.</em>
         </motion.h1>
         <motion.p
           {...fade(0.1)}
@@ -92,7 +93,7 @@ export default function CustomersPage() {
             margin: '0 auto', lineHeight: 1.65,
           }}
         >
-          From single-campus colleges to multi-institute groups - CallOHM
+          From single-campus colleges to multi-institute groups - EduGuide
           connects engineering admissions teams to 12th-pass students at scale.
         </motion.p>
       </section>
@@ -258,7 +259,7 @@ export default function CustomersPage() {
       {/* Logo marquee */}
       <section style={{ paddingBottom: 96 }}>
         <div className="landing-container" style={{ textAlign: 'center', marginBottom: 24 }}>
-          <div className="v2-logos-label">Institutions using CallOHM</div>
+          <div className="v2-logos-label">Institutions using EduGuide</div>
         </div>
         <div className="logo-marquee">
           <div className="logo-marquee-track">
@@ -277,15 +278,17 @@ export default function CustomersPage() {
         <motion.div {...fade(0)} className="v2-cta-block">
           <span className="eyebrow no-line">get started</span>
           <h2>Join the institutions already<br /><em>winning enrolments.</em></h2>
-          <p>15 minute call. No slides. A real walkthrough of your funnel inside CallOHM.</p>
+          <p>15 minute call. No slides. A real walkthrough of your funnel inside EduGuide.</p>
           <div className="btn-row">
-            <Link to="/book-demo" className="btn btn-primary btn-arrow">
+            <Link to="/book-demo" className="btn btn-solid-ink btn-arrow">
               Book a demo <ArrowRight size={15} />
             </Link>
-            <Link to="/pricing" className="btn btn-ghost">See pricing</Link>
+            <Link to="/pricing" className="btn btn-outline-ink">See pricing</Link>
           </div>
         </motion.div>
       </section>
+
+      <SiteFooter />
 
       <style>{`
         @media (max-width: 820px) {

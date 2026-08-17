@@ -4,9 +4,10 @@ import {
   Play, Clock, CalendarRange,
 } from 'lucide-react'
 
-const A = '#B5562C'
-const A_DARK = '#E08259'
-const GRAD = 'linear-gradient(135deg,#B5562C,#8C3D1A)'
+const A = '#4F46E5'
+const A_DARK = '#818CF8'
+const GRAD = 'linear-gradient(135deg,#4F46E5,#7C3AED)'
+const GRAD_DARK = 'linear-gradient(135deg,#818CF8,#C084FC)'
 const GREEN = 'linear-gradient(135deg,#10b981,#059669)'
 
 const DATA = [
@@ -56,10 +57,10 @@ const DATA = [
     nodeLabel: 'CAMPAIGN', placeholder: 'Schedule',
     opts: [
       { Icon: Play, name: 'Start Now', sub: 'Immediate · All leads' },
-      { Icon: Clock, name: '9 AM – 6 PM', sub: 'Business hours only' },
+      { Icon: Clock, name: '9 AM to 6 PM', sub: 'Business hours only' },
       { Icon: CalendarRange, name: 'Custom Schedule', sub: 'Set your own date & time' },
     ],
-    short: n => n === 'Start Now' ? 'Now' : n === '9 AM – 6 PM' ? '9–6 PM' : 'Custom',
+    short: n => n === 'Start Now' ? 'Now' : n === '9 AM to 6 PM' ? '9 to 6 PM' : 'Custom',
   },
 ]
 
@@ -121,10 +122,14 @@ export default function WorkflowAnimation() {
   }, [])
 
   const accent = isDark ? A_DARK : A
-  const accentGlow = isDark ? 'rgba(224,130,89,0.22)' : 'rgba(181,86,44,0.18)'
-  const bg = isDark ? '#080e1a' : '#f2f4f8'
+  const grad = isDark ? GRAD_DARK : GRAD
+  /* accent tint helper so every wash tracks the active accent */
+  const rgb = isDark ? '129,140,248' : '79,70,229'
+  const tint = (a) => `rgba(${rgb},${a})`
+  const accentGlow = tint(isDark ? 0.22 : 0.18)
+  const bg = isDark ? '#080B18' : '#F7F8FC'
   const surface = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.92)'
-  const ink = isDark ? '#e2e8f0' : '#0f172a'
+  const ink = isDark ? '#EEF1FA' : '#0F172A'
   const ink3 = isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.35)'
   const lineBase = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'
 
@@ -267,8 +272,8 @@ export default function WorkflowAnimation() {
         height: '100%',
         overflow: 'hidden',
         background: isDark
-          ? `radial-gradient(ellipse 70% 55% at 50% 45%, rgba(181,86,44,0.07) 0%, transparent 65%), ${bg}`
-          : `radial-gradient(ellipse 70% 55% at 50% 45%, rgba(181,86,44,0.05) 0%, transparent 65%), ${bg}`,
+          ? `radial-gradient(ellipse 70% 55% at 50% 45%, ${tint(0.07)} 0%, transparent 65%), ${bg}`
+          : `radial-gradient(ellipse 70% 55% at 50% 45%, ${tint(0.05)} 0%, transparent 65%), ${bg}`,
       }}
     >
       {/* ── Scaled inner scene (everything except cursor) ── */}
@@ -303,13 +308,14 @@ export default function WorkflowAnimation() {
       <div style={{
         position: 'absolute', bottom: '25%', right: '18%',
         width: 280, height: 200,
-        background: `radial-gradient(ellipse, ${isDark ? 'rgba(59,130,246,0.08)' : 'rgba(59,130,246,0.05)'} 0%, transparent 70%)`,
+        background: `radial-gradient(ellipse, ${isDark ? 'rgba(192,132,252,0.10)' : 'rgba(168,85,247,0.07)'} 0%, transparent 70%)`,
         filter: 'blur(40px)', pointerEvents: 'none',
       }} />
 
-      {/* ── Step progress strip ── */}
+      {/* ── Step progress strip (pinned under the eyebrow so the dropdown
+             card, which grows upward from the pipeline, can't cover it) ── */}
       <div style={{
-        position: 'absolute', top: '15%', left: '50%',
+        position: 'absolute', top: 62, left: '50%',
         transform: 'translateX(-50%)',
         display: 'flex', alignItems: 'center', gap: 0,
         zIndex: 20,
@@ -334,7 +340,7 @@ export default function WorkflowAnimation() {
                   width: 30, height: 30, borderRadius: '50%',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   background: done
-                    ? GRAD
+                    ? grad
                     : active
                       ? `${accent}18`
                       : isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)',
@@ -384,7 +390,7 @@ export default function WorkflowAnimation() {
           position: 'absolute', bottom: 28, right: 28, zIndex: 40,
           padding: '9px 22px', borderRadius: 12,
           fontSize: 12, fontWeight: 700, color: '#fff',
-          background: saveClicked ? GREEN : GRAD,
+          background: saveClicked ? GREEN : grad,
           opacity: showSave ? 1 : 0,
           transform: showSave ? 'translateY(0) scale(1)' : 'translateY(-10px) scale(0.88)',
           transition: 'all 0.35s cubic-bezier(.34,1.1,.64,1)',
@@ -520,7 +526,7 @@ export default function WorkflowAnimation() {
                 style={{
                   width: '100%', padding: '9px 0', borderRadius: 12, border: 'none',
                   fontSize: 12, fontWeight: 700, color: '#fff', cursor: 'pointer',
-                  background: saveDone ? GREEN : GRAD,
+                  background: saveDone ? GREEN : grad,
                   opacity: saveBtnIn ? 1 : 0,
                   transform: saveBtnIn ? 'translateY(0)' : 'translateY(6px)',
                   marginTop: 4,
@@ -555,10 +561,10 @@ export default function WorkflowAnimation() {
           <div style={{
             width: 54, height: 54, borderRadius: '50%',
             border: `2px solid ${accent}`,
-            background: isDark ? `rgba(181,86,44,0.12)` : `rgba(181,86,44,0.08)`,
+            background: isDark ? tint(0.12) : tint(0.08),
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 8, fontWeight: 800, letterSpacing: '0.18em', color: accent,
-            boxShadow: `0 0 28px ${accentGlow}, 0 0 0 6px ${isDark ? 'rgba(181,86,44,0.06)' : 'rgba(181,86,44,0.04)'}`,
+            boxShadow: `0 0 28px ${accentGlow}, 0 0 0 6px ${isDark ? tint(0.06) : tint(0.04)}`,
           }}>
             START
           </div>
@@ -570,7 +576,7 @@ export default function WorkflowAnimation() {
               width: 24, height: 24, borderRadius: '50%',
               border: `2px solid ${startGlow ? accent : isDark ? 'rgba(255,255,255,0.15)' : '#d1d5db'}`,
               background: startGlow
-                ? isDark ? `rgba(181,86,44,0.2)` : `rgba(181,86,44,0.1)`
+                ? isDark ? tint(0.2) : tint(0.1)
                 : isDark ? 'rgba(255,255,255,0.05)' : '#fff',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: 15, fontWeight: 500,
@@ -609,7 +615,7 @@ export default function WorkflowAnimation() {
               }}>
                 <div style={{
                   position: 'absolute', inset: 0,
-                  background: isFilled ? GRAD : 'transparent',
+                  background: isFilled ? grad : 'transparent',
                   width: isFilled ? '100%' : '0%',
                   transition: 'width 0.5s ease',
                 }} />
@@ -628,7 +634,7 @@ export default function WorkflowAnimation() {
                           : isDark ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.1)'
                       }`,
                     background: isFilled
-                      ? isDark ? `rgba(181,86,44,0.1)` : `rgba(181,86,44,0.05)`
+                      ? isDark ? tint(0.1) : tint(0.05)
                       : surface,
                     padding: '10px 16px',
                     minWidth: 110,
@@ -715,7 +721,7 @@ export default function WorkflowAnimation() {
                       width: 24, height: 24, borderRadius: '50%',
                       border: `2px solid ${plusGlow[i] ? accent : isDark ? 'rgba(255,255,255,0.15)' : '#d1d5db'}`,
                       background: plusGlow[i]
-                        ? isDark ? `rgba(181,86,44,0.22)` : `rgba(181,86,44,0.1)`
+                        ? isDark ? tint(0.22) : tint(0.1)
                         : isDark ? 'rgba(255,255,255,0.05)' : '#fff',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontSize: 15, fontWeight: 500,

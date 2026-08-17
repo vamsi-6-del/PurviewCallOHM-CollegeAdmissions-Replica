@@ -7,6 +7,7 @@ import {
 import { createBookDemoRequest } from '../api/bookDemo/bookDemoService'
 import { useTheme } from '../hooks/useTheme'
 import SiteNav from '../components/SiteNav'
+import SiteFooter from '../components/SiteFooter'
 
 const INITIAL_FORM = {
   fullName: '', workEmail: '', organization: '', message: '',
@@ -21,8 +22,8 @@ const fade = {
 }
 
 const HIGHLIGHTS = [
-  { icon: Clock, text: 'A live 15-minute walkthrough - no slides, no fluff.' },
-  { icon: Phone, text: 'See your funnel inside CallOHM with sample data.' },
+  { icon: Clock, text: 'A live 15-minute walkthrough. No slides, no fluff.' },
+  { icon: Phone, text: 'See your funnel inside EduGuide with sample data.' },
   { icon: ShieldCheck, text: 'Your details stay private. We never share or spam.' },
 ]
 
@@ -109,7 +110,7 @@ export default function BookDemoPage() {
   return (
     <div
       className="landing-v2"
-      data-accent="clay"
+      data-accent="edu"
       data-theme-scope={theme}
       style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}
     >
@@ -162,7 +163,7 @@ export default function BookDemoPage() {
               color: 'var(--ink)',
               margin: '0 0 22px',
             }}>
-              See CallOHM run on<br />
+              See EduGuide run on<br />
               <em style={{ color: 'var(--accent)' }}>your intake.</em>
             </h1>
 
@@ -172,7 +173,7 @@ export default function BookDemoPage() {
               maxWidth: 460, margin: '0 0 36px',
             }}>
               Tell us a little about your team and we&apos;ll set up a live walkthrough
-              of the platform - tuned to how your admissions cycle actually works.
+              of the platform, tuned to how your admissions cycle actually works.
             </p>
 
             <ul style={{
@@ -208,12 +209,12 @@ export default function BookDemoPage() {
               border: '1px solid var(--hair)',
               borderRadius: 24,
               padding: 36,
-              boxShadow: '0 24px 60px -24px rgba(15, 42, 31, 0.18)',
+              boxShadow: 'var(--shadow-lg)',
             }}>
               <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
                 <Field label="Full name">
                   <input
-                    type="text" required placeholder="Rohit Mehra"
+                    type="text" required autoComplete="name" placeholder="Rohit Mehra"
                     value={form.fullName} onChange={set('fullName')}
                     style={inputStyle} onFocus={applyFocus} onBlur={applyBlur}
                   />
@@ -221,7 +222,7 @@ export default function BookDemoPage() {
 
                 <Field label="Work email">
                   <input
-                    type="email" required placeholder="rohit@cbit.ac.in"
+                    type="email" required autoComplete="email" placeholder="rohit@cbit.ac.in"
                     value={form.workEmail} onChange={set('workEmail')}
                     style={inputStyle} onFocus={applyFocus} onBlur={applyBlur}
                   />
@@ -229,7 +230,7 @@ export default function BookDemoPage() {
 
                 <Field label="Institution">
                   <input
-                    type="text" required placeholder="CBIT"
+                    type="text" required autoComplete="organization" placeholder="CBIT"
                     value={form.organization} onChange={set('organization')}
                     style={inputStyle} onFocus={applyFocus} onBlur={applyBlur}
                   />
@@ -280,7 +281,7 @@ export default function BookDemoPage() {
                 <button
                   type="submit"
                   disabled={submitState === 'submitting'}
-                  className="btn btn-primary btn-arrow"
+                  className="btn btn-solid-ink btn-arrow"
                   style={{
                     marginTop: 6,
                     justifyContent: 'center',
@@ -313,6 +314,8 @@ export default function BookDemoPage() {
           </motion.div>
         </div>
       </div>
+
+      <SiteFooter />
 
       <style>{`
         @keyframes bd-spin { to { transform: rotate(360deg); } }

@@ -1,176 +1,227 @@
 import { Link } from 'react-router-dom'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, Check } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useTheme } from '../hooks/useTheme'
 import SiteNav from '../components/SiteNav'
+import SiteFooter from '../components/SiteFooter'
 
-const fade = {
-  hidden: { opacity: 0, y: 18 },
-  show: (i = 0) => ({
-    opacity: 1, y: 0,
-    transition: { duration: 0.55, delay: i * 0.08, ease: [0.22, 1, 0.36, 1] },
-  }),
-}
+/**
+ * Pricing, set editorially.
+ *
+ * Neither plan carries a public rate card — the price is quoted per intake — so
+ * the page sells the model rather than a number. The two plans run as a spread
+ * rather than competing cards, and the promise gets the page's one dark band.
+ */
+
+const fade = (d = 0) => ({
+  initial: { opacity: 0, y: 20 },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true, margin: '-80px' },
+  transition: { duration: 0.6, delay: d, ease: [0.22, 1, 0.36, 1] },
+})
+
+const PLANS = [
+  {
+    n: '01',
+    eyebrow: 'Prepaid',
+    name: 'Pay As You Go',
+    price: 'Top up any amount',
+    note: 'Credits, not contracts.',
+    body: 'Recharge and use. Pay only for the calls you actually run.',
+    points: [
+      'Pay only for completed calls',
+      'Recharge anytime, scale up or pause freely',
+      'AI voice calling, scoring & counselling scheduling',
+      'Multilingual calling across 30+ languages',
+      'No lock-in, no setup fees, no surprises',
+    ],
+    cta: 'Start with credits',
+    to: '/book-demo',
+  },
+  {
+    n: '02',
+    eyebrow: 'Custom pricing',
+    name: 'Enterprise',
+    price: "Let's talk",
+    note: 'The best per-call rate we can offer.',
+    body: 'Built for high-volume intakes and multi-campus rollouts.',
+    points: [
+      'Volume-based custom pricing at our lowest rates',
+      'Dedicated success manager & priority support',
+      'Separate agents and numbers per campus',
+      'Custom CRM and ERP integrations',
+      'Onboarding, rollout planning and season support',
+    ],
+    cta: 'Reach out to us',
+    to: '/contact',
+  },
+]
+
+const STEPS = [
+  { n: '01', title: 'Recharge', body: 'Top up credits with any amount, whenever you need them. No minimum, no expiry games.' },
+  { n: '02', title: 'Call candidates', body: 'Run AI voice calls across 30+ Indian languages, around the clock, through the whole intake season.' },
+  { n: '03', title: 'Pay per call', body: 'Credits draw down only for completed calls. An unanswered ring costs you nothing.' },
+]
 
 export default function PricingPage() {
   const [theme, toggleTheme] = useTheme()
 
   return (
-    <div className="landing-v2" data-accent="clay" data-theme-scope={theme} style={{ minHeight: '100vh' }}>
-
+    <div className="landing-v2" data-accent="edu" data-theme-scope={theme} style={{ minHeight: '100vh' }}>
       <SiteNav theme={theme} onToggleTheme={toggleTheme} active="pricing" />
 
-      {/* Hero */}
-      <section
-        className="landing-container"
-        style={{ paddingTop: 140, paddingBottom: 80, textAlign: 'center' }}
-      >
-        <motion.span
-          variants={fade} initial="hidden" animate="show" custom={0}
-          className="eyebrow"
-          style={{ display: 'inline-block', marginBottom: 22 }}
-        >
-          pricing
-        </motion.span>
-
-        <motion.h1
-          variants={fade} initial="hidden" animate="show" custom={1}
-          style={{
-            fontSize: 'clamp(2.6rem, 5.6vw, 4.2rem)',
-            lineHeight: 1.05,
-            letterSpacing: '-0.035em',
-            margin: '0 auto 24px',
-            maxWidth: 880,
-            fontFamily: 'var(--display)',
-            color: 'var(--ink)',
-          }}
-        >
-          Pricing that fits<br />
-          <em style={{ color: 'var(--accent)' }}>your volume.</em>
-        </motion.h1>
-
-        <motion.p
-          variants={fade} initial="hidden" animate="show" custom={2}
-          style={{
-            color: 'var(--ink-3)',
-            fontSize: 18,
-            lineHeight: 1.65,
-            maxWidth: 620,
-            margin: '0 auto 36px',
-          }}
-        >
-          Tell us what you want to launch, how much volume you expect, and what
-          support you need - we&apos;ll shape a clear pricing plan around it.
-        </motion.p>
-
-        <motion.div
-          variants={fade} initial="hidden" animate="show" custom={3}
-          style={{ display: 'inline-flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}
-        >
-          <Link to="/book-demo" className="btn btn-primary btn-arrow">
-            Talk to us <ArrowRight size={15} />
-          </Link>
-          <a href="mailto:support@callohm.com" className="btn btn-ghost">
-            support@callohm.com
-          </a>
-        </motion.div>
+      {/* Masthead */}
+      <section className="ed-section ed-masthead" style={{ paddingTop: 168 }}>
+        <div className="ed-atmos" aria-hidden="true"><span /><span /><span /></div>
+        <div className="ed-mesh" aria-hidden="true" />
+        <div className="landing-container ed-inner">
+          <motion.div {...fade(0)}>
+            <span className="ed-kicker">Pricing</span>
+            <h1 className="ed-display" style={{ margin: '22px 0 30px' }}>
+              Simple pricing,<br />
+              <em style={{ color: 'var(--accent)' }}>honest promise.</em>
+            </h1>
+            <p className="ed-lead" style={{ maxWidth: '48ch' }}>
+              Two ways to pay, one commitment: the best price we can put on the table.
+              Tell us your intake volume and we&apos;ll shape a plan around it.
+            </p>
+          </motion.div>
+        </div>
       </section>
 
-      {/* Custom plan card */}
-      <section className="landing-container" style={{ paddingBottom: 120 }}>
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-80px' }}
-          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          style={{
-            position: 'relative',
-            maxWidth: 760,
-            margin: '0 auto',
-            background: 'var(--surface)',
-            border: '1px solid var(--hair)',
-            borderRadius: 28,
-            padding: '56px 56px 52px',
-            overflow: 'hidden',
-          }}
+      {/* The two plans, as a spread. The second sits on tinted ground so
+          the pair reads as two panels rather than one long column. */}
+      {PLANS.map((plan, i) => (
+        <section
+          key={plan.n}
+          className={`ed-section${i === 1 ? ' ed-section-tint' : ''}`}
+          style={{ paddingLeft: 0, paddingRight: 0 }}
         >
-          {/* Soft accent glow */}
-          <div
-            aria-hidden
-            style={{
-              position: 'absolute',
-              top: -120, right: -120,
-              width: 280, height: 280,
-              borderRadius: '50%',
-              background: 'var(--accent-tint)',
-              filter: 'blur(40px)',
-              opacity: 0.7,
-              pointerEvents: 'none',
-            }}
-          />
-
-          <div style={{ position: 'relative' }}>
-            <div
-              style={{
-                fontSize: 11, fontWeight: 700, letterSpacing: '0.18em',
-                textTransform: 'uppercase',
-                color: 'var(--accent)',
-                fontFamily: 'var(--mono)',
-                marginBottom: 14,
-              }}
-            >
-              Custom plan
+          <div className="landing-container">
+          <motion.div className="ed-split" {...fade(0)}>
+            <div className="ed-aside">
+              <span className="ed-kicker">{plan.n} · {plan.eyebrow}</span>
+              <p className="ed-aside-note">{plan.body}</p>
             </div>
 
-            <h2
-              style={{
-                fontSize: 'clamp(1.6rem, 2.6vw, 2.1rem)',
-                lineHeight: 1.2,
-                letterSpacing: '-0.02em',
-                fontFamily: 'var(--display)',
-                color: 'var(--ink)',
-                margin: '0 0 14px',
-              }}
-            >
-              Need something built around <em style={{ color: 'var(--accent)' }}>compliance, scale,</em> or a specific workflow?
-            </h2>
+            <div className="pr-plan">
+              <div>
+                <h2 className="ed-h2">{plan.name}</h2>
+                <p className="pr-price">{plan.price}</p>
+                <p className="ed-body" style={{ marginTop: 8 }}>{plan.note}</p>
+                <Link to={plan.to} className="ed-link" style={{ marginTop: 26 }}>
+                  {plan.cta} <ArrowRight size={17} />
+                </Link>
+              </div>
 
-            <p
-              style={{
-                fontSize: 16,
-                lineHeight: 1.7,
-                color: 'var(--ink-3)',
-                margin: '0 0 28px',
-                maxWidth: 580,
-              }}
-            >
-              We can shape a custom commercial plan around your team, your timeline,
-              and your operating model.
-            </p>
+              <ul className="ed-checks">
+                {plan.points.map((p) => (
+                  <li key={p}><Check size={15} strokeWidth={2.6} />{p}</li>
+                ))}
+              </ul>
+            </div>
+          </motion.div>
+          </div>
+        </section>
+      ))}
 
-            <Link to="/book-demo" className="btn btn-primary btn-arrow">
-              Talk to us <ArrowRight size={15} />
-            </Link>
+      {/* How prepaid works */}
+      <section className="landing-container ed-section">
+        <motion.div className="ed-split" {...fade(0)}>
+          <div className="ed-aside">
+            <span className="ed-kicker">How prepaid works</span>
+            <p className="ed-aside-note">Three steps, no contract in between.</p>
+          </div>
+          <div>
+            <h2 className="ed-h2" style={{ marginBottom: 30 }}>Recharge, call, pay per call.</h2>
+            <div className="ed-rows">
+              {STEPS.map((step) => (
+                <div key={step.n} className="ed-row">
+                  <span className="ed-row-n">{step.n}</span>
+                  <div className="ed-row-main">
+                    <h3 className="ed-h3">{step.title}</h3>
+                    <p className="ed-body">{step.body}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </motion.div>
-
-        <motion.p
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          style={{
-            textAlign: 'center',
-            marginTop: 28,
-            color: 'var(--ink-4)',
-            fontSize: 13,
-            fontFamily: 'var(--mono)',
-            letterSpacing: '0.04em',
-          }}
-        >
-          No long-term commitment · Setup in under 15 minutes
-        </motion.p>
       </section>
+
+      {/* The promise — the page's one dark band */}
+      <section className="ed-band">
+        <div className="landing-container">
+          <motion.div className="ed-split" {...fade(0)}>
+            <div className="ed-aside">
+              <span className="ed-kicker">Our price promise</span>
+            </div>
+            <div style={{ display: 'grid', gap: 30 }}>
+              <h2 className="ed-h2">We promise the best pricing in the market.</h2>
+              <p className="ed-lead">
+                Find a better quote and we&apos;ll match it, or beat it. No bloated packages,
+                no paying for seats you don&apos;t use. Just fair pricing for a full intake season.
+              </p>
+              <p className="ed-quote" style={{ maxWidth: '30ch' }}>
+                &ldquo;Admit boldly. We&apos;ll keep the price honest.&rdquo;
+              </p>
+              <div>
+                <Link to="/contact" className="ed-link ed-link-lg">
+                  Ask for your best price <ArrowRight size={22} />
+                </Link>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Closing */}
+      <section className="landing-container ed-section ed-section-tight" style={{ borderTop: 'none' }}>
+        <motion.div className="ed-split" {...fade(0)}>
+          <div className="ed-aside">
+            <span className="ed-kicker">Get started</span>
+          </div>
+          <div style={{ display: 'grid', gap: 26 }}>
+            <h2 className="ed-h2" style={{ maxWidth: '18ch' }}>
+              Tell us your intake. We&apos;ll quote a price around it.
+            </h2>
+            <p className="ed-body">
+              15 minute call. No slides. A real walkthrough of your admissions funnel inside EduGuide.
+            </p>
+            <div className="btn-row">
+              <Link to="/book-demo" className="btn btn-solid-ink btn-arrow">
+                Book a demo <ArrowRight size={15} />
+              </Link>
+              <Link to="/contact" className="btn btn-outline-ink">Talk to us</Link>
+            </div>
+          </div>
+        </motion.div>
+      </section>
+
+      <SiteFooter />
+
+      <style>{`
+        /* The plan's headline sits left, its inclusions right — a
+           spread, not a card standing next to another card. */
+        .pr-plan {
+          display: grid;
+          grid-template-columns: minmax(0, 0.85fr) minmax(0, 1fr);
+          gap: 56px;
+          align-items: start;
+        }
+
+        .pr-price {
+          margin: 18px 0 0;
+          font-family: var(--display);
+          font-size: clamp(1.5rem, 2.6vw, 2.1rem);
+          letter-spacing: -0.035em;
+          color: var(--accent);
+        }
+
+        @media (max-width: 900px) {
+          .pr-plan { grid-template-columns: minmax(0, 1fr); gap: 30px; }
+        }
+      `}</style>
     </div>
   )
 }

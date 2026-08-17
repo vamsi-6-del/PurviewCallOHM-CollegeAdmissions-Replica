@@ -1,661 +1,178 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useTheme } from '../../hooks/useTheme'
-import { AnimatePresence, motion } from 'framer-motion'
-import { useConversation } from '@elevenlabs/react'
-import {
-  AlertCircle,
-  Loader2,
-  Mic,
-  MicOff,
-  Phone,
-  PhoneOff,
-  Variable,
-  X,
-} from 'lucide-react'
-import { getSignedUrl } from '../../api/agents/agentConsoleService'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Mic, MicOff, PhoneOff, Loader2, Radio } from 'lucide-react'
+import { Room, RoomEvent, Track } from 'livekit-client'
+import { createPreviewSession } from '../../api/resources/agents'
+import { Drawer, GhostButton, PrimaryButton, Banner } from '../../components/resource/ResourceKit'
 
-function cn(...parts) {
-  return parts.filter(Boolean).join(' ')
+/**
+ * Talk to an agent in the browser before putting it on a real call.
+ *
+ * The backend hands back a LiveKit room and token; audio flows over WebRTC, so
+ * nothing here goes through the telephony provider and no credits are spent.
+ *
+ * The Room is held in a ref rather than state — it is a live connection, not
+ * rendered data, and re-rendering must never recreate it. Every exit path
+ * disconnects it, because a room left open keeps the microphone hot.
+ */
+
+/** The session response is undocumented; accept the shapes it could take. */
+function readSession(res) {
+  const url = res?.url ?? res?.server_url ?? res?.serverUrl ?? res?.livekit_url
+    ?? res?.ws_url ?? res?.wsUrl ?? res?.livekit?.url
+  const token = res?.token ?? res?.access_token ?? res?.accessToken
+    ?? res?.participant_token ?? res?.livekit?.token
+  return { url, token }
 }
 
-function extractVariables(promptText, firstMessageText, existingValues = {}) {
-  const combined = `${promptText || ''} ${firstMessageText || ''}`
-  const regex = /\{\{([^}]+)\}\}/g
-  const values = new Set(Object.keys(existingValues || {}))
-  let match
+export default function AgentPreviewModal({ open, agentId, agentName, onClose }) {
+  const [state, setState] = useState('idle') // idle | connecting | live | ended
+  const [error, setError] = useState('')
+  const [muted, setMuted] = useState(false)
+  const [speaking, setSpeaking] = useState(false)
 
-  while ((match = regex.exec(combined)) !== null) {
-    const variable = match[1]?.trim()
-    if (variable) values.add(variable)
-  }
+  const roomRef = useRef(null)
+  const audioRef = useRef(null)
 
-  return Array.from(values).sort((a, b) => a.localeCompare(b))
-}
-
-function hexToRgb(hex) {
-  const normalized = String(hex || '#4f46e5').replace('#', '')
-  const expanded = normalized.length === 3
-    ? normalized.split('').map((value) => value + value).join('')
-    : normalized
-  const parsed = Number.parseInt(expanded, 16)
-  return {
-    r: (parsed >> 16) & 255,
-    g: (parsed >> 8) & 255,
-    b: parsed & 255,
-  }
-}
-
-function DottedSphere({ color, sphereMode, getInputFreq, getOutputFreq }) {
-  const canvasRef = useRef(null)
-  const stateRef = useRef({ color, sphereMode, getInputFreq, getOutputFreq })
-
-  useEffect(() => {
-    stateRef.current = { color, sphereMode, getInputFreq, getOutputFreq }
-  }, [color, sphereMode, getInputFreq, getOutputFreq])
-
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return undefined
-
-    const context = canvas.getContext('2d')
-    if (!context) return undefined
-
-    let dpr = 1
-    let frame = 0
-
-    const resize = () => {
-      const parent = canvas.parentElement
-      if (!parent) return
-      dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1))
-      canvas.width = Math.floor(parent.clientWidth * dpr)
-      canvas.height = Math.floor(parent.clientHeight * dpr)
-      canvas.style.width = `${parent.clientWidth}px`
-      canvas.style.height = `${parent.clientHeight}px`
-      context.setTransform(dpr, 0, 0, dpr, 0, 0)
-    }
-
-    resize()
-    window.addEventListener('resize', resize)
-
-    const totalDots = 860
-    const phi = Math.PI * (3 - Math.sqrt(5))
-    const dots = Array.from({ length: totalDots }, (_, index) => {
-      const y = 1 - (index / (totalDots - 1)) * 2
-      const radius = Math.sqrt(1 - y * y)
-      const theta = phi * index
-      return {
-        x: Math.cos(theta) * radius,
-        y,
-        z: Math.sin(theta) * radius,
-        theta,
-      }
-    })
-
-    const lerp = (from, to, amount) => from + (to - from) * amount
-    const easeOutCubic = (value) => 1 - Math.pow(1 - value, 3)
-
-    const getBandEnergy = (data) => {
-      if (!data?.length) return 0
-      const from = 4
-      const to = Math.min(data.length, 96)
-      if (to <= from) return 0
-
-      let sumSquares = 0
-      let count = 0
-
-      for (let index = from; index < to; index += 1) {
-        const value = data[index] / 255
-        sumSquares += value * value
-        count += 1
-      }
-
-      return Math.pow(Math.sqrt(sumSquares / Math.max(1, count)), 0.7)
-    }
-
-    let currentColor = hexToRgb(color)
-    let energySlow = 0.028
-    let pulse = 0.975
-    let modeIntensity = 0
-    let talkIntensity = 0
-    let rotationSpeed = 0.06
-    let inputFast = 0
-    let outputFast = 0
-    let noiseFloor = 0.06
-    let voiceActivity = 0
-    let speakingHold = 0
-    let time = 0
-    let lastTimestamp = performance.now()
-
-    const render = () => {
-      const now = performance.now()
-      const delta = Math.min(0.033, Math.max(0.008, (now - lastTimestamp) / 1000))
-      lastTimestamp = now
-
-      const {
-        color: activeColor,
-        sphereMode: activeMode,
-        getInputFreq: getInputFrequency,
-        getOutputFreq: getOutputFrequency,
-      } = stateRef.current
-
-      const targetColor = hexToRgb(activeColor)
-      currentColor = {
-        r: lerp(currentColor.r, targetColor.r, 0.015),
-        g: lerp(currentColor.g, targetColor.g, 0.015),
-        b: lerp(currentColor.b, targetColor.b, 0.015),
-      }
-
-      let rawInput = 0
-      let rawOutput = 0
-      try {
-        rawInput = getBandEnergy(getInputFrequency?.())
-      } catch {
-        rawInput = 0
-      }
-      try {
-        rawOutput = getBandEnergy(getOutputFrequency?.())
-      } catch {
-        rawOutput = 0
-      }
-
-      inputFast = lerp(inputFast, rawInput, rawInput > inputFast ? 0.18 : 0.07)
-      outputFast = lerp(outputFast, rawOutput, rawOutput > outputFast ? 0.2 : 0.08)
-
-      if (activeMode === 'listening') {
-        noiseFloor = lerp(noiseFloor, inputFast, 0.01)
-      }
-
-      const threshold = Math.min(0.38, noiseFloor + 0.1)
-      voiceActivity = inputFast > threshold
-        ? Math.min(voiceActivity + 1, 16)
-        : Math.max(voiceActivity - 2, 0)
-
-      const gatedInput = voiceActivity >= 10 ? inputFast : 0
-
-      if (activeMode === 'speaking') speakingHold = 10
-      else speakingHold = Math.max(0, speakingHold - 1)
-
-      const speakingStable = activeMode === 'speaking' || speakingHold > 0
-
-      modeIntensity = lerp(modeIntensity, activeMode === 'idle' ? 0 : 1, 0.06)
-      talkIntensity = lerp(talkIntensity, speakingStable ? 1 : 0, 0.08)
-
-      const audioEnergy = speakingStable ? outputFast : gatedInput
-      const idleEnergy = 0.028 + Math.sin(time * 0.6) * 0.006
-      energySlow = lerp(energySlow, lerp(idleEnergy, Math.max(audioEnergy, 0.05), modeIntensity), 0.08)
-      pulse = lerp(pulse, 0.975 + energySlow * 0.09, 0.05)
-      rotationSpeed = lerp(rotationSpeed, lerp(0.06, 0.1, modeIntensity), 0.04)
-
-      const width = (canvas.width / dpr) || canvas.clientWidth
-      const height = (canvas.height / dpr) || canvas.clientHeight
-      context.clearRect(0, 0, width, height)
-
-      const centerX = width / 2
-      const centerY = height * 0.55
-      const baseRadius = Math.min(width, height) * 0.34 * (0.25 + easeOutCubic(Math.min(1, time / 2)) * 0.75)
-      const radius = baseRadius * lerp(1, 1.07, talkIntensity * modeIntensity) * pulse
-      const rotateY = time * rotationSpeed
-      const rotateX = time * 0.022
-      const wavePhase = time * 0.55
-      const waveAmount = Math.min(0.03, lerp(0.012, 0.026, modeIntensity) + energySlow * 0.018)
-
-      const dimFactor = lerp(1, 0.55, talkIntensity * modeIntensity)
-      const baseRed = currentColor.r * dimFactor
-      const baseGreen = currentColor.g * dimFactor
-      const baseBlue = currentColor.b * dimFactor
-
-      dots.forEach((dot, index) => {
-        const radialScale =
-          1 +
-          Math.sin(wavePhase + dot.theta * 1.25) * waveAmount +
-          Math.sin(wavePhase * 0.7 + dot.y * 4.2) * waveAmount * 0.7
-
-        let x = dot.x * radialScale
-        let y = dot.y * radialScale
-        let z = dot.z * radialScale
-
-        let nextY = y * Math.cos(rotateX) - z * Math.sin(rotateX)
-        let nextZ = y * Math.sin(rotateX) + z * Math.cos(rotateX)
-        y = nextY
-        z = nextZ
-
-        let nextX = x * Math.cos(rotateY) - z * Math.sin(rotateY)
-        nextZ = x * Math.sin(rotateY) + z * Math.cos(rotateY)
-        x = nextX
-        z = nextZ
-
-        const cameraZ = Math.max(radius * 4, 300)
-        const worldZ = z * radius
-        if (worldZ < -cameraZ + 1) return
-
-        const scale = cameraZ / (cameraZ + worldZ)
-        const pointX = centerX + x * radius * scale
-        const pointY = centerY + y * radius * scale
-        const alpha = Math.max(0.15, (-z + 1) / 2.2)
-        const variance = (index % 4) * 8
-
-        context.fillStyle = `rgba(${Math.round(Math.min(255, baseRed + variance * 0.3))}, ${Math.round(Math.min(255, baseGreen - variance * 0.1))}, ${Math.round(Math.min(255, baseBlue + variance * 0.2))}, ${alpha})`
-        context.beginPath()
-        context.arc(pointX, pointY, scale * 1.75, 0, Math.PI * 2)
-        context.fill()
-      })
-
-      time += delta
-      frame = window.requestAnimationFrame(render)
-    }
-
-    frame = window.requestAnimationFrame(render)
-
-    return () => {
-      window.cancelAnimationFrame(frame)
-      window.removeEventListener('resize', resize)
-    }
+  const teardown = useCallback(async () => {
+    const room = roomRef.current
+    roomRef.current = null
+    if (room) await room.disconnect().catch(() => {})
+    if (audioRef.current) audioRef.current.replaceChildren()
+    setMuted(false)
+    setSpeaking(false)
   }, [])
 
-  return <canvas ref={canvasRef} className="absolute inset-0 h-full w-full pointer-events-none" />
-}
-
-export default function AgentPreviewModal({
-  open,
-  onClose,
-  agentId,
-  agentName,
-  promptText,
-  firstMessage,
-  initialDynamicVariables,
-  hasUnsavedChanges = false,
-}) {
-  const [theme] = useTheme()
-  const [dynamicVariables, setDynamicVariables] = useState(initialDynamicVariables || {})
-  const [errorMessage, setErrorMessage] = useState('')
-  const [transcript, setTranscript] = useState([])
-  const [isMuted, setIsMuted] = useState(false)
-  const [activePanel, setActivePanel] = useState('variables')
-  const transcriptEndRef = useRef(null)
-  const conversationRef = useRef(null)
-
-  const variableNames = useMemo(
-    () => extractVariables(promptText, firstMessage, initialDynamicVariables),
-    [firstMessage, initialDynamicVariables, promptText],
-  )
-
+  // Closing the drawer, navigating away or unmounting all end the session.
   useEffect(() => {
-    if (!open) return
-    setDynamicVariables(initialDynamicVariables || {})
-    setErrorMessage('')
-    setTranscript([])
-    setIsMuted(false)
-    setActivePanel('variables')
-  }, [initialDynamicVariables, open])
+    if (!open) { teardown(); setState('idle'); setError('') }
+  }, [open, teardown])
 
-  const missingVariables = useMemo(
-    () => variableNames.filter((name) => !String(dynamicVariables?.[name] || '').trim()),
-    [dynamicVariables, variableNames],
-  )
-  const filledVariables = variableNames.length - missingVariables.length
+  useEffect(() => () => { teardown() }, [teardown])
 
-  const voiceConversation = useConversation({
-    micMuted: isMuted,
-    onConnect: () => setErrorMessage(''),
-    onDisconnect: () => setIsMuted(false),
-    onMessage: (message) => {
-      if (!message?.message) return
-      setTranscript((current) => [
-        ...current,
-        {
-          role: message.source === 'user' ? 'user' : 'agent',
-          text: message.message,
-        },
-      ])
-    },
-    onError: (error) => {
-      setErrorMessage(typeof error === 'string' ? error : error?.message || 'Preview connection failed.')
-    },
-  })
-
-  const isConnected = voiceConversation.status === 'connected'
-  const isConnecting = voiceConversation.status === 'connecting'
-  const sphereMode = isConnected ? (voiceConversation.isSpeaking ? 'speaking' : 'listening') : 'idle'
-  const canStart = Boolean(agentId) && missingVariables.length === 0
-
-  useEffect(() => {
-    conversationRef.current = voiceConversation
-  }, [voiceConversation])
-
-  useEffect(() => () => {
-    const activeConversation = conversationRef.current
-    if (activeConversation?.status === 'connected') {
-      activeConversation.endSession().catch(() => { })
-    }
-  }, [])
-
-  useEffect(() => {
-    if (!open && voiceConversation.status === 'connected') {
-      voiceConversation.endSession().catch(() => { })
-    }
-  }, [open, voiceConversation])
-
-  useEffect(() => {
-    transcriptEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [transcript])
-
-  useEffect(() => {
-    if (transcript.length > 0) {
-      setActivePanel('transcript')
-    }
-  }, [transcript.length])
-
-  const getInputFreq = useCallback(() => voiceConversation.getInputByteFrequencyData?.(), [voiceConversation])
-  const getOutputFreq = useCallback(() => voiceConversation.getOutputByteFrequencyData?.(), [voiceConversation])
-
-  async function handleTogglePreview() {
-    if (isConnected) {
-      await voiceConversation.endSession()
-      return
-    }
-
+  async function start() {
+    setError('')
+    setState('connecting')
     try {
-      setErrorMessage('')
-      setTranscript([])
-
-      if (!window.isSecureContext) {
-        throw new Error('Preview requires HTTPS or localhost.')
+      const session = await createPreviewSession(agentId)
+      const { url, token } = readSession(session)
+      if (!url || !token) {
+        throw new Error('The preview session did not include a room URL and token.')
       }
 
-      if (!navigator?.mediaDevices?.getUserMedia) {
-        throw new Error('Microphone access is not available in this browser.')
-      }
+      const room = new Room({ adaptiveStream: true })
+      roomRef.current = room
 
-      const signedUrlResponse = await getSignedUrl(agentId)
-      if (!signedUrlResponse?.signed_url) {
-        throw new Error('Failed to create signed preview session.')
-      }
-
-      const values = variableNames.length > 0 ? dynamicVariables : undefined
-      await voiceConversation.startSession({
-        signedUrl: signedUrlResponse.signed_url,
-        ...(values ? { dynamicVariables: values } : {}),
+      room.on(RoomEvent.TrackSubscribed, (track) => {
+        if (track.kind !== Track.Kind.Audio) return
+        audioRef.current?.appendChild(track.attach())
       })
-    } catch (error) {
-      setErrorMessage(error?.message || 'Failed to start preview.')
+      room.on(RoomEvent.TrackUnsubscribed, (track) => track.detach().forEach((el) => el.remove()))
+      room.on(RoomEvent.ActiveSpeakersChanged, (speakers) => {
+        setSpeaking(speakers.some((s) => s.identity !== room.localParticipant.identity))
+      })
+      room.on(RoomEvent.Disconnected, () => {
+        roomRef.current = null
+        setState('ended')
+      })
+
+      await room.connect(url, token)
+      // Browsers only grant the microphone from a user gesture, which is the
+      // click that got us here — asking any later would be blocked.
+      await room.localParticipant.setMicrophoneEnabled(true)
+      setState('live')
+    } catch (e) {
+      await teardown()
+      setState('idle')
+      setError(e?.message || 'Could not start the preview session.')
     }
   }
 
-  const latestAgentMessage = [...transcript].reverse().find((entry) => entry.role === 'agent')
-  const latestUserMessage = [...transcript].reverse().find((entry) => entry.role === 'user')
-  const recentTranscript = transcript.slice(-6)
+  async function toggleMute() {
+    const room = roomRef.current
+    if (!room) return
+    const next = !muted
+    await room.localParticipant.setMicrophoneEnabled(!next).catch(() => {})
+    setMuted(next)
+  }
+
+  async function hangUp() {
+    await teardown()
+    setState('ended')
+  }
 
   return (
-    <AnimatePresence>
-      {open ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-slate-950/55 backdrop-blur-[6px]"
-            onClick={onClose}
-          />
+    <Drawer
+      open={open}
+      onClose={onClose}
+      title="Preview agent"
+      subtitle={agentName || agentId}
+      width="max-w-md"
+      footer={
+        state === 'live' ? (
+          <>
+            <GhostButton icon={muted ? MicOff : Mic} onClick={toggleMute}>
+              {muted ? 'Unmute' : 'Mute'}
+            </GhostButton>
+            <PrimaryButton icon={PhoneOff} onClick={hangUp}>End preview</PrimaryButton>
+          </>
+        ) : (
+          <>
+            <GhostButton onClick={onClose}>Close</GhostButton>
+            <PrimaryButton
+              icon={state === 'connecting' ? Loader2 : Radio}
+              busy={state === 'connecting'}
+              onClick={start}
+            >
+              {state === 'ended' ? 'Start again' : 'Start preview'}
+            </PrimaryButton>
+          </>
+        )
+      }
+    >
+      <div className="grid gap-4">
+        <Banner onDismiss={() => setError('')}>{error}</Banner>
 
-          <motion.div
-            initial={{ opacity: 0, y: 18, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 12, scale: 0.98 }}
-            transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-            className="relative z-10 flex h-[min(92vh,760px)] w-full max-w-7xl flex-col overflow-hidden rounded-2xl shadow-2xl"
-            style={{ background: 'var(--surface)', outline: '1px solid var(--hair)' }}
+        <div
+          className="flex flex-col items-center justify-center rounded-2xl px-6 py-10"
+          style={{ background: 'var(--ui-surface-2)', border: '1px solid var(--ui-border)' }}
+        >
+          <span
+            className="flex h-16 w-16 items-center justify-center rounded-full transition-transform"
+            style={{
+              background: 'var(--ui-accent-soft)',
+              color: 'var(--ui-accent-strong)',
+              transform: speaking ? 'scale(1.08)' : 'scale(1)',
+              boxShadow: speaking ? '0 0 0 8px var(--ui-accent-soft)' : 'none',
+            }}
           >
-            <div className="flex items-center justify-between gap-4 px-5 py-4" style={{ borderBottom: '1px solid var(--hair)', background: 'var(--bg-2)' }}>
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-indigo-700">
-                    <span className={cn('h-1.5 w-1.5 rounded-full', isConnected ? 'bg-emerald-500' : isConnecting ? 'bg-blue-500 animate-pulse' : 'bg-slate-400')} />
-                    {isConnected ? (voiceConversation.isSpeaking ? 'Speaking' : 'Listening') : isConnecting ? 'Connecting' : 'Ready'}
-                  </span>
-                  {hasUnsavedChanges ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-amber-700">
-                      <AlertCircle size={11} />
-                      Preview uses last saved agent
-                    </span>
-                  ) : null}
-                </div>
-                <h2 className="mt-2 truncate text-lg font-semibold text-gray-900">
-                  {agentName || 'Agent Preview'}
-                </h2>
-                <p className="mt-1 text-sm text-gray-500">
-                  Update runtime dynamic variables and test the live voice preview.
-                </p>
-              </div>
+            {state === 'connecting'
+              ? <Loader2 size={24} className="animate-spin" />
+              : <Radio size={24} />}
+          </span>
 
-              <button
-                type="button"
-                onClick={onClose}
-                className="rounded-lg border border-gray-200 bg-gray-50 p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-700"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[1.15fr_0.85fr]">
-              <div
-                className="relative flex min-h-[320px] flex-col overflow-hidden lg:border-b-0 lg:border-r"
-                style={{
-                  borderBottom: '1px solid var(--hair)',
-                  borderRight: '1px solid var(--hair)',
-                  background: theme === 'dark'
-                    ? 'radial-gradient(circle at top, rgba(79,70,229,0.18) 0%, rgba(99,102,241,0.08) 35%, var(--bg) 72%)'
-                    : 'radial-gradient(circle at top, #e0e7ff 0%, #eef2ff 35%, #f8fafc 72%)',
-                }}
-              >
-                <div className="relative min-h-0 flex-[0.78]">
-                  <DottedSphere
-                    color="#4f46e5"
-                    sphereMode={sphereMode}
-                    getInputFreq={getInputFreq}
-                    getOutputFreq={getOutputFreq}
-                  />
-
-                  {errorMessage ? (
-                    <div className="absolute left-1/2 top-4 z-10 w-[min(90%,480px)] -translate-x-1/2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 shadow-sm">
-                      {errorMessage}
-                    </div>
-                  ) : null}
-
-                  {isConnected && (latestAgentMessage || latestUserMessage) ? (
-                    <div className="absolute bottom-4 left-4 z-10 max-w-[min(92%,320px)] space-y-2">
-                      {latestAgentMessage ? (
-                        <div className="rounded-2xl border border-indigo-100 bg-white/85 px-3.5 py-3 shadow-lg backdrop-blur" style={{ background: 'color-mix(in srgb, var(--surface) 85%, transparent)' }}>
-                          <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-600">Agent</p>
-                          <p className="mt-1 text-sm leading-relaxed text-gray-800">{latestAgentMessage.text}</p>
-                        </div>
-                      ) : null}
-                      {latestUserMessage ? (
-                        <div className="rounded-2xl border border-indigo-100 bg-indigo-600/10 px-3.5 py-3 shadow-lg backdrop-blur">
-                          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">You</p>
-                          <p className="mt-1 text-sm leading-relaxed text-gray-800">{latestUserMessage.text}</p>
-                        </div>
-                      ) : null}
-                    </div>
-                  ) : null}
-                </div>
-
-                <div
-                  className="flex items-center justify-center gap-3 px-4 py-2.5"
-                  style={{
-                    borderTop: theme === 'dark' ? 'none' : '1px solid var(--hair)',
-                    background: theme === 'dark' ? 'transparent' : 'rgba(255,255,255,0.55)',
-                    backdropFilter: theme === 'dark' ? 'none' : 'blur(12px)',
-                  }}
-                >
-                  {isConnecting ? (
-                    <div className="flex items-center gap-2 text-sm font-semibold text-indigo-700">
-                      <Loader2 size={16} className="animate-spin" />
-                      Connecting preview...
-                    </div>
-                  ) : null}
-
-                  {isConnected ? (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => setIsMuted((current) => !current)}
-                        className={cn(
-                          'flex h-11 w-11 items-center justify-center rounded-full border shadow-sm transition hover:-translate-y-0.5',
-                          isMuted
-                            ? 'border-slate-500 bg-slate-500 text-white'
-                            : 'border-indigo-200 bg-indigo-50 text-indigo-600',
-                        )}
-                      >
-                        {isMuted ? <MicOff size={17} /> : <Mic size={17} />}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleTogglePreview}
-                        className="flex h-11 w-11 items-center justify-center rounded-full bg-red-500 text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-red-600"
-                      >
-                        <PhoneOff size={17} />
-                      </button>
-                    </>
-                  ) : null}
-
-                  {!isConnected && !isConnecting ? (
-                    <button
-                      type="button"
-                      onClick={handleTogglePreview}
-                      disabled={!canStart}
-                      className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-3 text-sm font-semibold text-white shadow-lg transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45"
-                    >
-                      <Phone size={15} />
-                      Start Preview
-                    </button>
-                  ) : null}
-                </div>
-              </div>
-
-              <div className="flex min-h-0 flex-col" style={{ background: 'var(--surface)' }}>
-                <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
-                  <div className="flex items-center gap-2 border-b border-gray-100 pb-3">
-                    {[
-                      { id: 'variables', label: 'Dynamic Variables', icon: Variable },
-                      { id: 'transcript', label: 'Transcript', icon: Phone },
-                    ].map((panel) => (
-                      <button
-                        key={panel.id}
-                        type="button"
-                        onClick={() => setActivePanel(panel.id)}
-                        className={cn(
-                          'inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition',
-                          activePanel === panel.id
-                            ? 'bg-indigo-600 text-white shadow-sm'
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800',
-                        )}
-                      >
-                        <panel.icon size={13} />
-                        {panel.label}
-                        <span
-                          className={cn(
-                            'ml-1 rounded-full px-1.5 py-0.5 text-[10px] leading-none',
-                            activePanel === panel.id
-                              ? 'bg-white/20 text-white'
-                              : 'bg-gray-100 text-gray-500 ring-1 ring-gray-200',
-                          )}
-                        >
-                          {panel.id === 'variables' ? variableNames.length : transcript.length}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="flex items-center justify-between gap-3 border-b border-gray-100 py-3 text-xs">
-                    <span className="font-medium text-gray-500">
-                      {activePanel === 'variables'
-                        ? `${filledVariables}/${variableNames.length} variables filled`
-                        : transcript.length > 0
-                          ? `${transcript.length} messages captured`
-                          : 'Conversation not started yet'}
-                    </span>
-                    <span className={cn(
-                      'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-semibold',
-                      isConnected
-                        ? 'bg-emerald-50 text-emerald-700'
-                        : isConnecting
-                          ? 'bg-blue-50 text-blue-700'
-                          : 'bg-gray-100 text-gray-600',
-                    )}>
-                      <span className={cn(
-                        'h-1.5 w-1.5 rounded-full',
-                        isConnected ? 'bg-emerald-500' : isConnecting ? 'bg-blue-500' : 'bg-gray-400',
-                      )}
-                      />
-                      {isConnected ? 'Live' : isConnecting ? 'Connecting' : 'Idle'}
-                    </span>
-                  </div>
-
-                  {activePanel === 'variables' ? (
-                    <div className="space-y-3 pt-4">
-                      {variableNames.length === 0 ? (
-                        <div className="py-10 text-sm text-gray-500">
-                          No dynamic variables were detected for this agent.
-                        </div>
-                      ) : (
-                        variableNames.map((name) => {
-                          const value = dynamicVariables?.[name] || ''
-                          const filled = Boolean(String(value).trim())
-                          return (
-                            <div key={name}>
-                              <div className="mb-1.5 flex items-center justify-between gap-2">
-                                <label className="font-mono text-xs font-semibold text-gray-700">{`{{${name}}}`}</label>
-                                <span
-                                  className={cn(
-                                    'inline-flex h-2 w-2 rounded-full',
-                                    filled ? 'bg-emerald-500' : 'bg-amber-500',
-                                  )}
-                                />
-                              </div>
-                              <input
-                                value={value}
-                                onChange={(event) => setDynamicVariables((current) => ({
-                                  ...current,
-                                  [name]: event.target.value,
-                                }))}
-                                placeholder={`Enter value for ${name}`}
-                                className={cn(
-                                  'w-full rounded-xl border bg-white px-4 py-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-300 focus:border-indigo-400',
-                                  filled ? 'border-gray-200' : 'border-amber-200 bg-amber-50/30',
-                                )}
-                              />
-                            </div>
-                          )
-                        })
-                      )}
-                    </div>
-                  ) : (
-                    <div className="space-y-3 pt-4">
-                      {recentTranscript.map((entry, index) => (
-                        <div
-                          key={`${entry.role}-recent-${index}`}
-                          className={cn(
-                            'rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm',
-                            entry.role === 'agent'
-                              ? 'border border-indigo-100 bg-indigo-50/70 text-gray-800'
-                              : 'border border-gray-200 bg-white text-gray-700',
-                          )}
-                        >
-                          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-                            {entry.role === 'agent' ? 'Agent' : 'You'}
-                          </p>
-                          <p className="mt-1">{entry.text}</p>
-                        </div>
-                      ))}
-                      <div ref={transcriptEndRef} />
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </motion.div>
+          <p className="mt-4 text-[13.5px] font-medium" style={{ color: 'var(--ui-text)' }}>
+            {state === 'live'
+              ? (speaking ? 'Agent is speaking' : 'Listening, say something')
+              : state === 'connecting' ? 'Connecting…'
+                : state === 'ended' ? 'Preview ended'
+                  : 'Ready to preview'}
+          </p>
+          <p className="mt-1 max-w-xs text-center text-[11.5px]" style={{ color: 'var(--ui-text-3)' }}>
+            {state === 'live'
+              ? 'This is a browser-only conversation. No call is placed and no credits are used.'
+              : 'Your microphone is used to talk to the agent. Nothing is dialled.'}
+          </p>
         </div>
-      ) : null}
-    </AnimatePresence>
+
+        {/* LiveKit attaches the agent's audio element here. */}
+        <div ref={audioRef} className="hidden" />
+
+        {state === 'live' && muted ? (
+          <p className="text-center text-[11.5px]" style={{ color: '#b45309' }}>
+            Your microphone is muted. The agent cannot hear you.
+          </p>
+        ) : null}
+      </div>
+    </Drawer>
   )
 }

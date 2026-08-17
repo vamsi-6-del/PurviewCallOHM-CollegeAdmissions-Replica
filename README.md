@@ -1,7 +1,8 @@
-# CallOHM Admissions
+# EduGuide
 
 An AI-powered outbound calling platform for college admissions — built as a multi-tenant SaaS where Purview (SuperAdmin) manages college tenants, each with their own admins and agents.
 
+**Marketing site:** https://eduguide.callohm.com  
 **Live App:** https://admission.callohm.com  
 **GitHub:** https://github.com/ShashirekhaPurview/PurviewCallOHM-CollegeAdmissions.git
 
@@ -9,7 +10,7 @@ An AI-powered outbound calling platform for college admissions — built as a mu
 
 ## Overview
 
-CallOHM Admissions enables college admissions teams to run AI-driven outbound calling campaigns. The platform covers the full admissions funnel: contact management, AI voice calling (via ElevenLabs), post-call disposition capture, follow-up scheduling, and analytics.
+EduGuide enables college admissions teams to run AI-driven outbound calling campaigns. The platform covers the full admissions funnel: contact management, AI voice calling (via ElevenLabs), post-call disposition capture, follow-up scheduling, and analytics.
 
 ### User Roles
 
@@ -154,13 +155,17 @@ JWT-based authentication with refresh token rotation. Sessions are stored in `lo
 Create a `.env` file in the project root:
 
 ```env
-VITE_API_BASE_URL=https://admission.callohm.com/api/v1
-VITE_STATIC_KEY_ADMISSIONS=<static_api_key>
-VITE_ELEVENLABS_AGENT_ID_CONTACTS=<elevenlabs_agent_id>
-VITE_ELEVENLABS_TTS_MODEL=eleven_v3_conversational
+# Twilio Voice Bot API — routes are served at the root, with no /api/v1 prefix.
+VITE_API_BASE_URL=http://192.168.0.191:7860
+VITE_AGENT_ID=<agent_id>
+VITE_TELEPHONY_ID=<outbound_telephony_id>
 ```
 
 All variables must be prefixed with `VITE_` to be accessible in the browser.
+
+The previous backend (`https://admission.callohm.com/api/v1`) is kept commented
+out in `.env` for rollback. `VITE_STATIC_KEY_ADMISSIONS` was only used by the
+old ElevenLabs passthrough and is no longer read.
 
 ---
 
